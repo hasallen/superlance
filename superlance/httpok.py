@@ -151,6 +151,8 @@ class HTTPOk:
             ConnClass = timeoutconn.TimeoutHTTPConnection
         elif scheme == 'https':
             ConnClass = timeoutconn.TimeoutHTTPSConnection
+        elif scheme == 'ws':
+            ConnClass = timeoutconn.TimeoutWSConnection
         else:
             raise ValueError('Bad scheme %s' % scheme)
 

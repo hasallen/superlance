@@ -77,6 +77,28 @@ class HTTPOkTests(unittest.TestCase):
         prog.connclass = make_connection(response, exc=exc)
         return prog
 
+    def _makeOnePopulatedWS(self, programs, any, response=None, exc=None,
+                          gcore=None, coredir=None, eager=True):
+        if response is None:
+            response = DummyResponse()
+        rpc = DummyRPCServer()
+        sendmail = 'cat - > /dev/null'
+        email = 'chrism@plope.com'
+        url = 'ws://api.allendev:8080/'
+        timeout = 10
+        status = '101'
+        inbody = None
+        gcore = gcore
+        coredir = coredir
+        prog = self._makeOne(rpc, programs, any, url, timeout, status,
+                             inbody, email, sendmail, coredir, gcore, eager)
+        prog.stdin = StringIO()
+        prog.stdout = StringIO()
+        prog.stderr = StringIO()
+        from superlance.timeoutconn import TimeoutWSConnection
+        prog.connclass = TimeoutWSConnection('api.allendev:8080')
+        return prog
+
     def test_listProcesses_no_programs(self):
         programs = []
         any = None
@@ -270,5 +292,18 @@ class HTTPOkTests(unittest.TestCase):
         self.assertEqual(mailed[1],
                     'Subject: httpok for http://foo/bar: bad status returned')
 
+
+    def test_runforever_websocket_eager(self):
+        programs = {'foo':0, 'bar':0, 'baz_01':0 }
+        groups = {}
+        any = None
+        prog = self._makeOnePopulatedWS(programs, any)
+        prog.stdin.write('eventname:TICK len:0\n')
+        prog.stdin.seek(0)
+        prog.runforever(test=True)
+        self.assertEqual(prog.stderr.getvalue(), '')
+
+
 if __name__ == '__main__':
     unittest.main()
+
