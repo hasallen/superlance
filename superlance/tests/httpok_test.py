@@ -70,7 +70,8 @@ class HTTPOkTests(unittest.TestCase):
         gcore = gcore
         coredir = coredir
         prog = self._makeOne(rpc, programs, any, url, timeout, status,
-                             inbody, email, sendmail, coredir, gcore, eager)
+                             inbody, None, email, sendmail, coredir,
+                             gcore, eager)
         prog.stdin = StringIO()
         prog.stdout = StringIO()
         prog.stderr = StringIO()
@@ -87,16 +88,19 @@ class HTTPOkTests(unittest.TestCase):
         url = 'ws://api.allendev:8080/'
         timeout = 10
         status = '101'
-        inbody = None
+        inbody = '{"messageType":"status","success":true,"message":"Not authenticated."}'
         gcore = gcore
         coredir = coredir
+        websocket_string = '{"messageType": "status"}'
+        
         prog = self._makeOne(rpc, programs, any, url, timeout, status,
-                             inbody, email, sendmail, coredir, gcore, eager)
+                             inbody, websocket_string, email,
+                             sendmail, coredir, gcore, eager)
         prog.stdin = StringIO()
         prog.stdout = StringIO()
         prog.stderr = StringIO()
         from superlance.timeoutconn import TimeoutWSConnection
-        prog.connclass = TimeoutWSConnection('api.allendev:8080')
+        prog.connclass = TimeoutWSConnection
         return prog
 
     def test_listProcesses_no_programs(self):

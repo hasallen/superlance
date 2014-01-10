@@ -60,11 +60,12 @@ class TimeoutWSConnection:
         self.status = 101
         self.reason = "OK"
         self.ws = None
+        self.websocket_string = "Hello, world."
 
     def request(self,method,path):
         try:
             self.ws = create_connection('ws://' + self.hostport + path)
-            self.ws.send("Hello, World")
+            self.ws.send(self.websocket_string)
         except ValueError, e:
             self.status = 500
             self.reason = str(e)

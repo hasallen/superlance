@@ -26,7 +26,7 @@
 
 doc = """\
 httpok.py [-p processname] [-a] [-g] [-t timeout] [-c status_code] [-b inbody]
-          [-m mail_address] [-s sendmail] URL
+          [-w websocket_string] [-m mail_address] [-s sendmail] URL
 
 Options:
 
@@ -66,6 +66,11 @@ Options:
       response, the processes in the RUNNING state specified by -p
       or -a will be restarted.  The default is to ignore the
       body.
+
+-w -- specify a string to be sent for a WebSocket check.  After the
+      initial HTTP transaction and upgrade, this string is sent
+      through the socket.  The response is set as the body and is
+      available for checking with -b.  Default is "Hello, world."
 
 -s -- the sendmail command to use to send email
       (e.g. "/usr/sbin/sendmail -t -i").  Must be a command which accepts
@@ -112,8 +117,9 @@ def usage():
 
 class HTTPOk:
     connclass = None
-    def __init__(self, rpc, programs, any, url, timeout, status, inbody,
-                 email, sendmail, coredir, gcore, eager):
+    def __init__(self, rpc, programs, any, url, timeout, status,
+                 inbody, websocket_string, email, sendmail, coredir,
+                 gcore, eager):
         self.rpc = rpc
         self.programs = programs
         self.any = any
@@ -121,6 +127,7 @@ class HTTPOk:
         self.timeout = timeout
         self.status = status
         self.inbody = inbody
+        self.websocket_string = websocket_string
         self.email = email
         self.sendmail = sendmail
         self.coredir = coredir
@@ -171,11 +178,13 @@ class HTTPOk:
             conn = ConnClass(hostport)
             conn.timeout = self.timeout
 
+            if scheme == 'ws':
+                conn.websocket_string = self.websocket_string
+
             act = False
 
             specs = self.listProcesses(ProcessStates.RUNNING)
             if self.eager or len(specs) > 0:
-
                 try:
                     conn.request('GET', path)
                     res = conn.getresponse()
@@ -291,7 +300,7 @@ class HTTPOk:
 
 def main(argv=sys.argv):
     import getopt
-    short_args="hp:at:c:b:s:m:g:d:eE"
+    short_args="hp:at:c:b:w:s:m:g:d:eE"
     long_args=[
         "help",
         "program=",
@@ -299,6 +308,7 @@ def main(argv=sys.argv):
         "timeout=",
         "code=",
         "body=",
+        "websocket=",
         "sendmail_program=",
         "email=",
         "gcore=",
@@ -327,6 +337,7 @@ def main(argv=sys.argv):
     timeout = 10
     status = '200'
     inbody = None
+    websocket_string = "Hello, world."
 
     for option, value in opts:
 
@@ -354,6 +365,9 @@ def main(argv=sys.argv):
         if option in ('-b', '--body'):
             inbody = value
 
+        if option in ('-w', '--websocket'):
+            websocket_string = value
+
         if option in ('-g', '--gcore'):
             gcore = value
 
@@ -378,8 +392,9 @@ def main(argv=sys.argv):
         sys.stderr.flush()
         return
 
-    prog = HTTPOk(rpc, programs, any, url, timeout, status, inbody, email,
-                  sendmail, coredir, gcore, eager)
+    prog = HTTPOk(rpc, programs, any, url, timeout, status, inbody,
+                  websocket_string, email, sendmail, coredir, gcore,
+                  eager)
     prog.runforever()
 
 if __name__ == '__main__':
